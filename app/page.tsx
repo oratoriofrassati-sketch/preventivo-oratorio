@@ -167,12 +167,6 @@ function createSelections(): Selection[] {
   }));
 }
 
-function priceForChild(pos: number, w: (typeof WEEKS)[number]) {
-  if (pos === 1) return w.childBase;
-  if (pos === 2) return w.childSecond;
-  return w.childThirdPlus;
-}
-
 function formatEuro(v: number) {
   return new Intl.NumberFormat("it-IT", {
     style: "currency",
@@ -192,70 +186,96 @@ export default function App() {
     { id: 1, role: "figlio", name: "", extraShirt: false, selections: createSelections() },
   ]);
 
-  const childIndex = useMemo(() => {
-    let c = 0;
-    return rows.map((r) => (r.role === "figlio" ? ++c : 0));
-  }, [rows]);
+  const computed = useMemo(() => {
+    return rows.map((r, rowIndex) => {
+      const details = r.selections.map((s) => {
+        const w = WEEKS.find((x) => x.id === s.weekId)!;
 
-  const computed = useMemo(
-    () =>
-      rows.map((r, i) => {
-        const pos = childIndex[i];
+        let base = 0;
 
-        const details = r.selections.map((s) => {
-          const w = WEEKS.find((x) => x.id === s.weekId)!;
+        if (s.enrolled) {
+          if (r.role === "animatore") {
+            base = w.animatorBase;
+          } else {
+            // Calcolo posizione del figlio SOLO tra quelli iscritti a questa specifica settimana
+            const enrolledChildrenIndexes = rows
+              .map((row, idx) => ({ row, idx }))
+              .filter(({ row }) => row.role === "figlio")
+              .filter(({ row }) => {
+                const weekSelection = row.selections.find((sel) => sel.weekId === s.weekId);
+                return weekSelection?.enrolled === true;
+              })
+              .map(({ idx }) => idx);
 
-          const base = s.enrolled
-            ? r.role === "animatore"
-              ? w.animatorBase
-              : priceForChild(pos, w)
-            : 0;
+            const siblingPositionForThisWeek = enrolledChildrenIndexes.indexOf(rowIndex) + 1;
 
-          const lunch = s.enrolled
-            ? s.selectedLunchDays.length *
-              (r.role === "animatore" ? ANIMATOR_LUNCH_DAY_FEE : CHILD_LUNCH_DAY_FEE)
-            : 0;
+            if (siblingPositionForThisWeek <= 0) {
+              base = w.childBase;
+            } else if (s.weekId === 7) {
+              base = w.childBase;
+            } else if (siblingPositionForThisWeek === 1) {
+              base = w.childBase;
+            } else if (siblingPositionForThisWeek === 2) {
+              base = w.childSecond;
+            } else {
+              base = w.childThirdPlus;
+            }
+          }
+        }
 
-          const pool = s.enrolled && s.pool
+        const lunch = s.enrolled
+          ? s.selectedLunchDays.length *
+            (r.role === "animatore" ? ANIMATOR_LUNCH_DAY_FEE : CHILD_LUNCH_DAY_FEE)
+          : 0;
+
+        const pool =
+          s.enrolled && s.pool
             ? r.role === "animatore"
               ? w.animatorPool
               : w.childPool
             : 0;
 
-          const trip = s.enrolled && s.trip
+        const trip =
+          s.enrolled && s.trip
             ? r.role === "animatore"
               ? w.animatorTrip
               : w.childTrip
             : 0;
 
-          return {
-            ...s,
-            w,
-            base,
-            lunchAmount: lunch,
-            poolAmount: pool,
-            tripAmount: trip,
-            total: base + lunch + pool + trip,
-          };
-        });
-
-        const weeklyTotal = details.reduce((a, b) => a + b.total, 0);
-        const registrationFee = GENERAL_REGISTRATION_FEE;
-        const extraShirtFee = r.extraShirt ? EXTRA_SHIRT_FEE : 0;
-
         return {
-          ...r,
-          pos,
-          details,
-          registrationFee,
-          extraShirtFee,
-          weeklyTotal,
-          displayName: r.name || (r.role === "figlio" ? `Figlio ${pos}` : "Animatore"),
-          total: registrationFee + extraShirtFee + weeklyTotal,
+          ...s,
+          w,
+          base,
+          lunchAmount: lunch,
+          poolAmount: pool,
+          tripAmount: trip,
+          total: base + lunch + pool + trip,
         };
-      }),
-    [rows, childIndex]
-  );
+      });
+
+      const weeklyTotal = details.reduce((a, b) => a + b.total, 0);
+      const registrationFee = GENERAL_REGISTRATION_FEE;
+      const extraShirtFee = r.extraShirt ? EXTRA_SHIRT_FEE : 0;
+
+      const globalChildPosition =
+        r.role === "figlio"
+          ? rows
+              .slice(0, rowIndex + 1)
+              .filter((row) => row.role === "figlio").length
+          : 0;
+
+      return {
+        ...r,
+        pos: globalChildPosition,
+        details,
+        registrationFee,
+        extraShirtFee,
+        weeklyTotal,
+        displayName: r.name || (r.role === "figlio" ? `Figlio ${globalChildPosition}` : "Animatore"),
+        total: registrationFee + extraShirtFee + weeklyTotal,
+      };
+    });
+  }, [rows]);
 
   const total = useMemo(() => computed.reduce((a, b) => a + b.total, 0), [computed]);
 
@@ -268,7 +288,6 @@ export default function App() {
           ...row,
           selections: row.selections.map((s) => {
             if (s.weekId !== weekId) return s;
-
             const next = { ...s, [key]: value };
 
             if (!next.enrolled) {
@@ -345,6 +364,7 @@ export default function App() {
         }`
       );
       lines.push(`- Quota generale iscrizione: ${formatEuro(participant.registrationFee)}`);
+
       if (participant.extraShirtFee > 0) {
         lines.push(`- Maglietta aggiuntiva: ${formatEuro(participant.extraShirtFee)}`);
       }
@@ -439,7 +459,7 @@ export default function App() {
                 Composizione famiglia
               </CardTitle>
               <CardDescription>
-                L&apos;ordine di inserimento dei figli determina automaticamente l&apos;applicazione dello sconto settimanale.
+                Lo sconto fratelli si applica solo ai figli iscritti nella stessa settimana.
               </CardDescription>
             </CardHeader>
 
@@ -487,7 +507,7 @@ export default function App() {
 
                         <p className="text-sm text-slate-500">
                           {r.role === "figlio"
-                            ? "Quota settimanale scontata in base all'ordine di inserimento."
+                            ? "La quota settimanale dipende dai fratelli presenti in quella stessa settimana."
                             : "Quota settimanale sempre pari a 0 €, con servizi dedicati."}
                         </p>
 
@@ -576,11 +596,7 @@ export default function App() {
                           <label className="flex items-center justify-between border-t py-2">
                             <span className="text-sm">Iscrizione</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold">
-                                {formatEuro(
-                                  r.role === "animatore" ? d.w.animatorBase : priceForChild(r.pos, d.w)
-                                )}
-                              </span>
+                              <span className="text-sm font-semibold">{formatEuro(d.base)}</span>
                               <input
                                 type="checkbox"
                                 checked={d.enrolled}
@@ -614,7 +630,7 @@ export default function App() {
                           <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">Piscina</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}</span>
+                              <span className="text-sm">{formatEuro(d.poolAmount || (r.role === "animatore" ? d.w.animatorPool : d.w.childPool))}</span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -628,7 +644,7 @@ export default function App() {
                           <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">{d.w.tripName}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}</span>
+                              <span className="text-sm">{formatEuro(d.tripAmount || (r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip))}</span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -672,11 +688,7 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">
-                                      {formatEuro(
-                                        r.role === "animatore" ? d.w.animatorBase : priceForChild(r.pos, d.w)
-                                      )}
-                                    </span>
+                                    <span className="block font-medium">{formatEuro(d.base || (d.enrolled ? d.base : 0))}</span>
                                     <span className="block text-xs text-slate-500">quota settimana</span>
                                   </span>
                                 </label>
