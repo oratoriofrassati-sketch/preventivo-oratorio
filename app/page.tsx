@@ -372,13 +372,25 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-orange-50 p-4 text-slate-900 md:p-8" style={{ fontFamily: '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif' }}>
       <div className="mx-auto max-w-7xl space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Preventivo Oratorio Estivo</h1>
-          <p className="max-w-3xl text-sm text-slate-600 md:text-base">
-            Seleziona per ogni partecipante le settimane frequentate, i servizi collegati e le eventuali magliette aggiuntive.
-            Mensa, piscina e gita si attivano solo se la settimana è stata selezionata.
-          </p>
-        </div>
+<div className="space-y-4 text-center">
+  <div className="flex justify-center">
+    <img
+      src="/logo-oratorio.png"
+      alt="Logo Oratorio"
+      className="h-20 w-auto object-contain md:h-24"
+    />
+  </div>
+
+  <div className="space-y-2">
+    <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
+      Preventivo Oratorio Estivo
+    </h1>
+    <p className="mx-auto max-w-3xl text-sm text-slate-600 md:text-base">
+      Seleziona per ogni partecipante le settimane frequentate, i servizi collegati e le eventuali magliette aggiuntive.
+      Mensa, piscina e gita si attivano solo se la settimana è stata selezionata.
+    </p>
+  </div>
+</div>
 
         <div className="grid gap-6 lg:grid-cols-[1.55fr_0.85fr]">
           <Card className="rounded-3xl border-white/60 shadow-sm">
