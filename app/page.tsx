@@ -28,6 +28,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 10,
     lunchDays: ["Martedì 9 giugno", "Giovedì 11 giugno"],
+    color: "bg-blue-50 border-blue-200",
   },
   {
     id: 2,
@@ -43,6 +44,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 12.5,
     lunchDays: ["Lunedì 15 giugno", "Mercoledì 17 giugno", "Venerdì 19 giugno"],
+    color: "bg-emerald-50 border-emerald-200",
   },
   {
     id: 3,
@@ -58,6 +60,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 14,
     lunchDays: ["Lunedì 22 giugno", "Mercoledì 24 giugno", "Venerdì 26 giugno"],
+    color: "bg-purple-50 border-purple-200",
   },
   {
     id: 4,
@@ -73,6 +76,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 14,
     lunchDays: ["Lunedì 29 giugno", "Mercoledì 1 luglio", "Venerdì 3 luglio"],
+    color: "bg-orange-50 border-orange-200",
   },
   {
     id: 5,
@@ -88,6 +92,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 10,
     lunchDays: ["Lunedì 6 luglio", "Mercoledì 8 luglio", "Venerdì 10 luglio"],
+    color: "bg-pink-50 border-pink-200",
   },
   {
     id: 6,
@@ -103,6 +108,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 15,
     lunchDays: ["Lunedì 13 luglio", "Mercoledì 15 luglio"],
+    color: "bg-yellow-50 border-yellow-200",
   },
   {
     id: 7,
@@ -118,6 +124,7 @@ const WEEKS = [
     animatorPool: 10,
     animatorTrip: 12.5,
     lunchDays: ["Mercoledì 2 settembre", "Venerdì 4 settembre"],
+    color: "bg-cyan-50 border-cyan-200",
   },
   {
     id: 8,
@@ -138,6 +145,7 @@ const WEEKS = [
       "Giovedì 10 settembre",
       "Venerdì 11 settembre",
     ],
+    color: "bg-lime-50 border-lime-200",
   },
 ] as const;
 
@@ -197,7 +205,6 @@ export default function App() {
           if (r.role === "animatore") {
             base = w.animatorBase;
           } else {
-            // Calcolo posizione del figlio SOLO tra quelli iscritti a questa specifica settimana
             const enrolledChildrenIndexes = rows
               .map((row, idx) => ({ row, idx }))
               .filter(({ row }) => row.role === "figlio")
@@ -583,7 +590,7 @@ export default function App() {
                       {r.details.map((d) => (
                         <div
                           key={d.weekId}
-                          className={`rounded-2xl border p-3 ${d.enrolled ? "bg-slate-50" : "bg-white"}`}
+                          className={`rounded-2xl border p-3 ${d.enrolled ? d.w.color : "bg-white border-slate-200"}`}
                         >
                           <div className="mb-2 flex items-center justify-between">
                             <div>
@@ -630,7 +637,9 @@ export default function App() {
                           <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">Piscina</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{formatEuro(d.poolAmount || (r.role === "animatore" ? d.w.animatorPool : d.w.childPool))}</span>
+                              <span className="text-sm">
+                                {formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}
+                              </span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -644,7 +653,9 @@ export default function App() {
                           <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">{d.w.tripName}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">{formatEuro(d.tripAmount || (r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip))}</span>
+                              <span className="text-sm">
+                                {formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}
+                              </span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -674,12 +685,12 @@ export default function App() {
                         <tbody>
                           {r.details.map((d) => (
                             <tr key={d.weekId} className="align-top">
-                              <td className="rounded-l-2xl border bg-white px-3 py-3">
+                              <td className={`rounded-l-2xl border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
                                 <div className="font-medium">{d.w.label}</div>
                                 <div className="text-xs text-slate-500">{d.w.period}</div>
                               </td>
 
-                              <td className="border bg-white px-3 py-3">
+                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
                                 <label className="flex items-start gap-2">
                                   <input
                                     type="checkbox"
@@ -688,13 +699,13 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">{formatEuro(d.base || (d.enrolled ? d.base : 0))}</span>
+                                    <span className="block font-medium">{formatEuro(d.base)}</span>
                                     <span className="block text-xs text-slate-500">quota settimana</span>
                                   </span>
                                 </label>
                               </td>
 
-                              <td className="border bg-white px-3 py-3">
+                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
                                 {d.enrolled ? (
                                   <div className="space-y-2">
                                     <div className="text-xs font-medium text-slate-600">
@@ -719,7 +730,7 @@ export default function App() {
                                 )}
                               </td>
 
-                              <td className="border bg-white px-3 py-3">
+                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
                                 <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
@@ -737,7 +748,7 @@ export default function App() {
                                 </label>
                               </td>
 
-                              <td className="border bg-white px-3 py-3">
+                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
                                 <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
@@ -755,7 +766,7 @@ export default function App() {
                                 </label>
                               </td>
 
-                              <td className="rounded-r-2xl border bg-white px-3 py-3 text-right font-semibold">
+                              <td className={`rounded-r-2xl border px-3 py-3 text-right font-semibold ${d.enrolled ? d.w.color : "bg-white"}`}>
                                 {formatEuro(d.total)}
                               </td>
                             </tr>
