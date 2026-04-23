@@ -10,6 +10,8 @@ import { Mail, Calculator, Users, Euro, Plus, Minus, Send, Shirt } from "lucide-
 
 const GENERAL_REGISTRATION_FEE = 30;
 const EXTRA_SHIRT_FEE = 10;
+const CHILD_LUNCH_DAY_FEE = 6;
+const ANIMATOR_LUNCH_DAY_FEE = 4;
 
 const WEEKS = [
   {
@@ -20,13 +22,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    childLunch: 12,
     tripName: "Pian Sciresa",
     childTrip: 20,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 8,
     animatorTrip: 10,
+    lunchDays: ["Martedì 9 giugno", "Giovedì 11 giugno"],
   },
   {
     id: 2,
@@ -36,13 +37,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    childLunch: 18,
     tripName: "Cornelle",
     childTrip: 25,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 12,
     animatorTrip: 12.5,
+    lunchDays: ["Lunedì 15 giugno", "Mercoledì 17 giugno", "Venerdì 19 giugno"],
   },
   {
     id: 3,
@@ -52,13 +52,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    childLunch: 18,
     tripName: "Acquatica",
     childTrip: 28,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 12,
     animatorTrip: 14,
+    lunchDays: ["Lunedì 22 giugno", "Mercoledì 24 giugno", "Venerdì 26 giugno"],
   },
   {
     id: 4,
@@ -68,13 +67,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    childLunch: 18,
     tripName: "Lago Moro",
     childTrip: 28,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 12,
     animatorTrip: 14,
+    lunchDays: ["Lunedì 29 giugno", "Mercoledì 1 luglio", "Venerdì 3 luglio"],
   },
   {
     id: 5,
@@ -84,13 +82,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    childLunch: 18,
     tripName: "Abbadia",
     childTrip: 20,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 12,
     animatorTrip: 10,
+    lunchDays: ["Lunedì 6 luglio", "Mercoledì 8 luglio", "Venerdì 10 luglio"],
   },
   {
     id: 6,
@@ -100,13 +97,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    childLunch: 12,
     tripName: "Parco sospeso",
     childTrip: 30,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 8,
     animatorTrip: 15,
+    lunchDays: ["Lunedì 13 luglio", "Mercoledì 15 luglio"],
   },
   {
     id: 7,
@@ -116,13 +112,12 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 10,
     childPool: 0,
-    childLunch: 12,
     tripName: "Acquaworld",
     childTrip: 25,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 8,
     animatorTrip: 12.5,
+    lunchDays: ["Mercoledì 2 settembre", "Venerdì 4 settembre"],
   },
   {
     id: 8,
@@ -132,20 +127,24 @@ const WEEKS = [
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 0,
-    childLunch: 24,
     tripName: "Volandia",
     childTrip: 28,
     animatorBase: 0,
     animatorPool: 10,
-    animatorLunch: 16,
     animatorTrip: 14,
+    lunchDays: [
+      "Lunedì 7 settembre",
+      "Mercoledì 9 settembre",
+      "Giovedì 10 settembre",
+      "Venerdì 11 settembre",
+    ],
   },
 ] as const;
 
 type Selection = {
   weekId: number;
   enrolled: boolean;
-  lunch: boolean;
+  selectedLunchDays: string[];
   pool: boolean;
   trip: boolean;
 };
@@ -162,7 +161,7 @@ function createSelections(): Selection[] {
   return WEEKS.map((w) => ({
     weekId: w.id,
     enrolled: false,
-    lunch: false,
+    selectedLunchDays: [],
     pool: false,
     trip: false,
   }));
@@ -212,10 +211,9 @@ export default function App() {
               : priceForChild(pos, w)
             : 0;
 
-          const lunch = s.enrolled && s.lunch
-            ? r.role === "animatore"
-              ? w.animatorLunch
-              : w.childLunch
+          const lunch = s.enrolled
+            ? s.selectedLunchDays.length *
+              (r.role === "animatore" ? ANIMATOR_LUNCH_DAY_FEE : CHILD_LUNCH_DAY_FEE)
             : 0;
 
           const pool = s.enrolled && s.pool
@@ -261,7 +259,7 @@ export default function App() {
 
   const total = useMemo(() => computed.reduce((a, b) => a + b.total, 0), [computed]);
 
-  function toggle(id: number, weekId: number, key: keyof Selection, value: boolean) {
+  function toggle(id: number, weekId: number, key: "enrolled" | "pool" | "trip", value: boolean) {
     setRows((current) =>
       current.map((row) => {
         if (row.id !== id) return row;
@@ -270,11 +268,39 @@ export default function App() {
           ...row,
           selections: row.selections.map((s) => {
             if (s.weekId !== weekId) return s;
+
             const next = { ...s, [key]: value };
+
             if (!next.enrolled) {
-              return { ...next, lunch: false, pool: false, trip: false };
+              return { ...next, selectedLunchDays: [], pool: false, trip: false };
             }
+
             return next;
+          }),
+        };
+      })
+    );
+  }
+
+  function toggleLunchDay(id: number, weekId: number, day: string) {
+    setRows((current) =>
+      current.map((row) => {
+        if (row.id !== id) return row;
+
+        return {
+          ...row,
+          selections: row.selections.map((s) => {
+            if (s.weekId !== weekId) return s;
+            if (!s.enrolled) return s;
+
+            const exists = s.selectedLunchDays.includes(day);
+
+            return {
+              ...s,
+              selectedLunchDays: exists
+                ? s.selectedLunchDays.filter((d) => d !== day)
+                : [...s.selectedLunchDays, day],
+            };
           }),
         };
       })
@@ -326,11 +352,21 @@ export default function App() {
       participant.details
         .filter((d) => d.enrolled)
         .forEach((d) => {
-          const extras = [
-            d.lunch ? `mensa ${formatEuro(d.lunchAmount)}` : null,
-            d.pool ? `piscina ${formatEuro(d.poolAmount)}` : null,
-            d.trip ? `gita ${d.w.tripName} ${formatEuro(d.tripAmount)}` : null,
-          ].filter(Boolean);
+          const extras: string[] = [];
+
+          if (d.selectedLunchDays.length > 0) {
+            extras.push(
+              `mensa (${d.selectedLunchDays.join(", ")}) ${formatEuro(d.lunchAmount)}`
+            );
+          }
+
+          if (d.pool) {
+            extras.push(`piscina ${formatEuro(d.poolAmount)}`);
+          }
+
+          if (d.trip) {
+            extras.push(`gita ${d.w.tripName} ${formatEuro(d.tripAmount)}`);
+          }
 
           lines.push(
             `- ${d.w.label} (${d.w.period}): quota ${formatEuro(d.base)}${
@@ -370,27 +406,30 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-orange-50 p-4 text-slate-900 md:p-8" style={{ fontFamily: '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif' }}>
+    <div
+      className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-orange-50 p-4 text-slate-900 md:p-8"
+      style={{ fontFamily: '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif' }}
+    >
       <div className="mx-auto max-w-7xl space-y-6">
-<div className="space-y-4 text-center">
-  <div className="flex justify-center">
-    <img
-      src="/logo-oratorio.png"
-      alt="Logo Oratorio"
-      className="h-32 w-auto object-contain md:h-40"
-    />
-  </div>
+        <div className="space-y-4 text-center">
+          <div className="flex justify-center">
+            <img
+              src="/logo-oratorio.png"
+              alt="Logo Oratorio"
+              className="h-32 w-auto object-contain md:h-40"
+            />
+          </div>
 
-  <div className="space-y-2">
-    <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-      Preventivo Oratorio Estivo
-    </h1>
-    <p className="mx-auto max-w-3xl text-sm text-slate-600 md:text-base">
-      Seleziona per ogni partecipante le settimane frequentate, i servizi collegati e le eventuali magliette aggiuntive.
-      Mensa, piscina e gita si attivano solo se la settimana è stata selezionata.
-    </p>
-  </div>
-</div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
+              Preventivo Oratorio Estivo
+            </h1>
+            <p className="mx-auto max-w-3xl text-sm text-slate-600 md:text-base">
+              Seleziona per ogni partecipante le settimane frequentate, i servizi collegati e le eventuali magliette aggiuntive.
+              Mensa, piscina e gita si attivano solo se la settimana è stata selezionata.
+            </p>
+          </div>
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.55fr_0.85fr]">
           <Card className="rounded-3xl border-white/60 shadow-sm">
@@ -437,7 +476,11 @@ export default function App() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-bold text-slate-900">{r.displayName}</h3>
-                          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${roleBadge(r.role)}`}>
+                          <span
+                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${roleBadge(
+                              r.role
+                            )}`}
+                          >
                             {r.role === "figlio" ? `Figlio ${r.pos}` : "Animatore"}
                           </span>
                         </div>
@@ -547,19 +590,26 @@ export default function App() {
                             </div>
                           </label>
 
-                          <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
-                            <span className="text-sm">Mensa</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{formatEuro(r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch)}</span>
-                              <input
-                                type="checkbox"
-                                disabled={!d.enrolled}
-                                checked={d.lunch}
-                                onChange={(e) => toggle(r.id, d.weekId, "lunch", e.target.checked)}
-                                className="h-5 w-5 accent-blue-600"
-                              />
+                          {d.enrolled && (
+                            <div className="border-t py-2">
+                              <div className="mb-2 text-sm font-medium">
+                                Mensa ({r.role === "animatore" ? formatEuro(ANIMATOR_LUNCH_DAY_FEE) : formatEuro(CHILD_LUNCH_DAY_FEE)} al giorno)
+                              </div>
+                              <div className="space-y-2">
+                                {d.w.lunchDays.map((day) => (
+                                  <label key={day} className="flex items-center justify-between gap-3 text-sm">
+                                    <span>{day}</span>
+                                    <input
+                                      type="checkbox"
+                                      checked={d.selectedLunchDays.includes(day)}
+                                      onChange={() => toggleLunchDay(r.id, d.weekId, day)}
+                                      className="h-5 w-5 accent-blue-600"
+                                    />
+                                  </label>
+                                ))}
+                              </div>
                             </div>
-                          </label>
+                          )}
 
                           <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">Piscina</span>
@@ -594,25 +644,26 @@ export default function App() {
 
                     {/* DESKTOP */}
                     <div className="hidden overflow-x-auto md:block">
-                      <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl border text-sm">
+                      <table className="min-w-full border-separate border-spacing-y-3 text-sm">
                         <thead>
                           <tr className="bg-slate-100 text-left text-slate-700">
-                            <th className="px-3 py-3 font-semibold">Settimana</th>
+                            <th className="rounded-l-2xl px-3 py-3 font-semibold">Settimana</th>
                             <th className="px-3 py-3 font-semibold">Iscrizione</th>
                             <th className="px-3 py-3 font-semibold">Mensa</th>
                             <th className="px-3 py-3 font-semibold">Piscina</th>
                             <th className="px-3 py-3 font-semibold">Gita</th>
-                            <th className="px-3 py-3 text-right font-semibold">Totale</th>
+                            <th className="rounded-r-2xl px-3 py-3 text-right font-semibold">Totale</th>
                           </tr>
                         </thead>
                         <tbody>
                           {r.details.map((d) => (
-                            <tr key={d.weekId} className={d.enrolled ? "bg-slate-50/80" : "bg-white"}>
-                              <td className="border-t px-3 py-3 align-top">
+                            <tr key={d.weekId} className="align-top">
+                              <td className="rounded-l-2xl border bg-white px-3 py-3">
                                 <div className="font-medium">{d.w.label}</div>
                                 <div className="text-xs text-slate-500">{d.w.period}</div>
                               </td>
-                              <td className="border-t px-3 py-3 align-top">
+
+                              <td className="border bg-white px-3 py-3">
                                 <label className="flex items-start gap-2">
                                   <input
                                     type="checkbox"
@@ -630,22 +681,33 @@ export default function App() {
                                   </span>
                                 </label>
                               </td>
-                              <td className="border-t px-3 py-3 align-top">
-                                <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
-                                  <input
-                                    type="checkbox"
-                                    disabled={!d.enrolled}
-                                    checked={d.lunch}
-                                    onChange={(e) => toggle(r.id, d.weekId, "lunch", e.target.checked)}
-                                    className="mt-1 h-5 w-5 accent-blue-600"
-                                  />
-                                  <span>
-                                    <span className="block font-medium">{formatEuro(r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch)}</span>
-                                    <span className="block text-xs text-slate-500">servizio mensa</span>
-                                  </span>
-                                </label>
+
+                              <td className="border bg-white px-3 py-3">
+                                {d.enrolled ? (
+                                  <div className="space-y-2">
+                                    <div className="text-xs font-medium text-slate-600">
+                                      {r.role === "animatore"
+                                        ? `${formatEuro(ANIMATOR_LUNCH_DAY_FEE)} al giorno`
+                                        : `${formatEuro(CHILD_LUNCH_DAY_FEE)} al giorno`}
+                                    </div>
+                                    {d.w.lunchDays.map((day) => (
+                                      <label key={day} className="flex items-center justify-between gap-3 text-sm">
+                                        <span>{day}</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={d.selectedLunchDays.includes(day)}
+                                          onChange={() => toggleLunchDay(r.id, d.weekId, day)}
+                                          className="h-5 w-5 accent-blue-600"
+                                        />
+                                      </label>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-slate-400">Attiva prima la settimana</div>
+                                )}
                               </td>
-                              <td className="border-t px-3 py-3 align-top">
+
+                              <td className="border bg-white px-3 py-3">
                                 <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
@@ -655,12 +717,15 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">{formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}</span>
+                                    <span className="block font-medium">
+                                      {formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}
+                                    </span>
                                     <span className="block text-xs text-slate-500">ingresso piscina</span>
                                   </span>
                                 </label>
                               </td>
-                              <td className="border-t px-3 py-3 align-top">
+
+                              <td className="border bg-white px-3 py-3">
                                 <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
@@ -670,12 +735,17 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">{formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}</span>
+                                    <span className="block font-medium">
+                                      {formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}
+                                    </span>
                                     <span className="block text-xs text-slate-500">{d.w.tripName}</span>
                                   </span>
                                 </label>
                               </td>
-                              <td className="border-t px-3 py-3 text-right align-top font-semibold">{formatEuro(d.total)}</td>
+
+                              <td className="rounded-r-2xl border bg-white px-3 py-3 text-right font-semibold">
+                                {formatEuro(d.total)}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -707,7 +777,7 @@ export default function App() {
               <CardContent className="space-y-4">
                 {computed.map((r) => {
                   const enrolledWeeks = r.details.filter((item) => item.enrolled).length;
-                  const lunchCount = r.details.filter((item) => item.lunch).length;
+                  const lunchDaysCount = r.details.reduce((sum, item) => sum + item.selectedLunchDays.length, 0);
                   const tripCount = r.details.filter((item) => item.trip).length;
                   const poolCount = r.details.filter((item) => item.pool).length;
 
@@ -719,7 +789,7 @@ export default function App() {
                           quota base {formatEuro(r.registrationFee)}
                           {r.extraShirtFee > 0 ? `, maglietta ${formatEuro(r.extraShirtFee)}` : ""}
                           <br />
-                          {enrolledWeeks} sett., {lunchCount} mensa, {tripCount} gite, {poolCount} piscina
+                          {enrolledWeeks} sett., {lunchDaysCount} giorni mensa, {tripCount} gite, {poolCount} piscina
                         </div>
                       </div>
                       <div className="font-semibold">{formatEuro(r.total)}</div>
