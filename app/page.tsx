@@ -377,7 +377,7 @@ export default function App() {
     <img
       src="/logo-oratorio.png"
       alt="Logo Oratorio"
-      className="h-20 w-auto object-contain md:h-24"
+      className="h-32 w-auto object-contain md:h-40"
     />
   </div>
 
