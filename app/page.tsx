@@ -321,11 +321,27 @@ export default function App() {
     return lines.join("\n");
   }
 
-  function sendQuoteEmail() {
-    const subject = encodeURIComponent("Preventivo Oratorio Estivo");
-    const body = encodeURIComponent(buildEmailSummary());
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+async function sendQuoteEmail() {
+  const res = await fetch("/api/send-quote", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      to: email,
+      subject: "Preventivo Oratorio Estivo",
+      text: buildEmailSummary(),
+    }),
+  });
+
+  const data = await res.json();
+
+  if (data.ok) {
+    alert("Preventivo inviato correttamente!");
+  } else {
+    alert("Errore durante l'invio.");
   }
+}
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
