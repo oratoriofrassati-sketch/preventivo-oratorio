@@ -17,124 +17,139 @@ const WEEKS = [
   {
     id: 1,
     label: "Settimana 1",
+    shortBadge: "S1",
     period: "9-12 giugno",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    tripName: "Pian Sciresa",
+    tripName: "Gita a Pian Sciresa",
     childTrip: 20,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 10,
     lunchDays: ["Martedì 9 giugno", "Giovedì 11 giugno"],
     color: "bg-blue-50 border-blue-200",
+    badge: "bg-blue-100 text-blue-700 border-blue-200",
   },
   {
     id: 2,
     label: "Settimana 2",
+    shortBadge: "S2",
     period: "15-19 giugno",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    tripName: "Cornelle",
+    tripName: "Gita alle Cornelle",
     childTrip: 25,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 12.5,
     lunchDays: ["Lunedì 15 giugno", "Mercoledì 17 giugno", "Venerdì 19 giugno"],
     color: "bg-emerald-50 border-emerald-200",
+    badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
   },
   {
     id: 3,
     label: "Settimana 3",
+    shortBadge: "S3",
     period: "22-26 giugno",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    tripName: "Acquatica",
+    tripName: "Gita ad Acquatica",
     childTrip: 28,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 14,
     lunchDays: ["Lunedì 22 giugno", "Mercoledì 24 giugno", "Venerdì 26 giugno"],
     color: "bg-purple-50 border-purple-200",
+    badge: "bg-purple-100 text-purple-700 border-purple-200",
   },
   {
     id: 4,
     label: "Settimana 4",
+    shortBadge: "S4",
     period: "29 giugno-3 luglio",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    tripName: "Lago Moro",
+    tripName: "Gita al Lago Moro",
     childTrip: 28,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 14,
     lunchDays: ["Lunedì 29 giugno", "Mercoledì 1 luglio", "Venerdì 3 luglio"],
     color: "bg-orange-50 border-orange-200",
+    badge: "bg-orange-100 text-orange-700 border-orange-200",
   },
   {
     id: 5,
     label: "Settimana 5",
+    shortBadge: "S5",
     period: "6-10 luglio",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    tripName: "Abbadia",
+    tripName: "Gita ad Abbadia",
     childTrip: 20,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 10,
     lunchDays: ["Lunedì 6 luglio", "Mercoledì 8 luglio", "Venerdì 10 luglio"],
     color: "bg-pink-50 border-pink-200",
+    badge: "bg-pink-100 text-pink-700 border-pink-200",
   },
   {
     id: 6,
     label: "Settimana 6",
+    shortBadge: "S6",
     period: "13-16 luglio",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 18,
-    tripName: "Parco sospeso",
+    tripName: "Gita al Parco sospeso",
     childTrip: 30,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 15,
     lunchDays: ["Lunedì 13 luglio", "Mercoledì 15 luglio"],
     color: "bg-yellow-50 border-yellow-200",
+    badge: "bg-yellow-100 text-yellow-700 border-yellow-200",
   },
   {
     id: 7,
     label: "Settimana 7",
+    shortBadge: "S7",
     period: "2-4 settembre",
     childBase: 10,
     childSecond: 10,
     childThirdPlus: 10,
     childPool: 0,
-    tripName: "Acquaworld",
+    tripName: "Gita ad Acquaworld",
     childTrip: 25,
     animatorBase: 0,
     animatorPool: 10,
     animatorTrip: 12.5,
     lunchDays: ["Mercoledì 2 settembre", "Venerdì 4 settembre"],
     color: "bg-cyan-50 border-cyan-200",
+    badge: "bg-cyan-100 text-cyan-700 border-cyan-200",
   },
   {
     id: 8,
     label: "Settimana 8",
+    shortBadge: "S8",
     period: "7-11 settembre",
     childBase: 15,
     childSecond: 10,
     childThirdPlus: 5,
     childPool: 0,
-    tripName: "Volandia",
+    tripName: "Gita a Volandia",
     childTrip: 28,
     animatorBase: 0,
     animatorPool: 10,
@@ -146,6 +161,7 @@ const WEEKS = [
       "Venerdì 11 settembre",
     ],
     color: "bg-lime-50 border-lime-200",
+    badge: "bg-lime-100 text-lime-700 border-lime-200",
   },
 ] as const;
 
@@ -266,9 +282,7 @@ export default function App() {
 
       const globalChildPosition =
         r.role === "figlio"
-          ? rows
-              .slice(0, rowIndex + 1)
-              .filter((row) => row.role === "figlio").length
+          ? rows.slice(0, rowIndex + 1).filter((row) => row.role === "figlio").length
           : 0;
 
       return {
@@ -382,9 +396,7 @@ export default function App() {
           const extras: string[] = [];
 
           if (d.selectedLunchDays.length > 0) {
-            extras.push(
-              `mensa (${d.selectedLunchDays.join(", ")}) ${formatEuro(d.lunchAmount)}`
-            );
+            extras.push(`mensa (${d.selectedLunchDays.join(", ")}) ${formatEuro(d.lunchAmount)}`);
           }
 
           if (d.pool) {
@@ -392,7 +404,7 @@ export default function App() {
           }
 
           if (d.trip) {
-            extras.push(`gita ${d.w.tripName} ${formatEuro(d.tripAmount)}`);
+            extras.push(`${d.w.tripName} ${formatEuro(d.tripAmount)}`);
           }
 
           lines.push(
@@ -590,11 +602,16 @@ export default function App() {
                       {r.details.map((d) => (
                         <div
                           key={d.weekId}
-                          className={`rounded-2xl border p-3 ${d.enrolled ? d.w.color : "bg-white border-slate-200"}`}
+                          className={`rounded-2xl border p-3 ${d.w.color}`}
                         >
                           <div className="mb-2 flex items-center justify-between">
                             <div>
-                              <div className="font-semibold">{d.w.label}</div>
+                              <div className="mb-1 flex items-center gap-2">
+                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${d.w.badge}`}>
+                                  {d.w.shortBadge}
+                                </span>
+                                <div className="font-semibold">{d.w.label}</div>
+                              </div>
                               <div className="text-xs text-slate-500">{d.w.period}</div>
                             </div>
                             <div className="font-semibold">{formatEuro(d.total)}</div>
@@ -685,12 +702,17 @@ export default function App() {
                         <tbody>
                           {r.details.map((d) => (
                             <tr key={d.weekId} className="align-top">
-                              <td className={`rounded-l-2xl border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
-                                <div className="font-medium">{d.w.label}</div>
+                              <td className={`rounded-l-2xl border px-3 py-3 ${d.w.color}`}>
+                                <div className="mb-1 flex items-center gap-2">
+                                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${d.w.badge}`}>
+                                    {d.w.shortBadge}
+                                  </span>
+                                  <div className="font-medium">{d.w.label}</div>
+                                </div>
                                 <div className="text-xs text-slate-500">{d.w.period}</div>
                               </td>
 
-                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
+                              <td className={`border px-3 py-3 ${d.w.color}`}>
                                 <label className="flex items-start gap-2">
                                   <input
                                     type="checkbox"
@@ -705,7 +727,7 @@ export default function App() {
                                 </label>
                               </td>
 
-                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
+                              <td className={`border px-3 py-3 ${d.w.color}`}>
                                 {d.enrolled ? (
                                   <div className="space-y-2">
                                     <div className="text-xs font-medium text-slate-600">
@@ -730,7 +752,7 @@ export default function App() {
                                 )}
                               </td>
 
-                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
+                              <td className={`border px-3 py-3 ${d.w.color}`}>
                                 <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
@@ -748,7 +770,7 @@ export default function App() {
                                 </label>
                               </td>
 
-                              <td className={`border px-3 py-3 ${d.enrolled ? d.w.color : "bg-white"}`}>
+                              <td className={`border px-3 py-3 ${d.w.color}`}>
                                 <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
@@ -766,7 +788,7 @@ export default function App() {
                                 </label>
                               </td>
 
-                              <td className={`rounded-r-2xl border px-3 py-3 text-right font-semibold ${d.enrolled ? d.w.color : "bg-white"}`}>
+                              <td className={`rounded-r-2xl border px-3 py-3 text-right font-semibold ${d.w.color}`}>
                                 {formatEuro(d.total)}
                               </td>
                             </tr>
