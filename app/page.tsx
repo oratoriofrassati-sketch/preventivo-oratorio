@@ -259,7 +259,6 @@ export default function App() {
           ...row,
           selections: row.selections.map((s) => {
             if (s.weekId !== weekId) return s;
-
             const next = { ...s, [key]: value };
 
             if (!next.enrolled) {
@@ -445,14 +444,14 @@ export default function App() {
                       </Button>
                     </div>
 
-                    {/* MOBILE VIEW */}
+                    {/* MOBILE */}
                     <div className="space-y-3 md:hidden">
                       {r.details.map((d) => (
                         <div
                           key={d.weekId}
                           className={`rounded-xl border p-3 ${d.enrolled ? "bg-slate-50" : "bg-white"}`}
                         >
-                          <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="mb-2 flex items-center justify-between">
                             <div>
                               <div className="font-medium">{d.w.label}</div>
                               <div className="text-xs text-slate-500">{d.w.period}</div>
@@ -540,7 +539,7 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* DESKTOP VIEW */}
+                    {/* DESKTOP */}
                     <div className="hidden overflow-x-auto md:block">
                       <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl border text-sm">
                         <thead>
@@ -671,7 +670,7 @@ export default function App() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="sticky top-6 rounded-2xl shadow-sm">
+            <Card className="rounded-2xl shadow-sm lg:sticky lg:top-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Calculator className="h-5 w-5" />
@@ -719,7 +718,7 @@ export default function App() {
                   Invio email
                 </CardTitle>
                 <CardDescription>
-                  Il preventivo viene inviato automaticamente all&apos;indirizzo inserito.
+                  Il preventivo viene inviato automaticamente all&apos;indirizzo email inserito.
                 </CardDescription>
               </CardHeader>
 
