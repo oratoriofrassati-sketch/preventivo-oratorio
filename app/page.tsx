@@ -201,21 +201,25 @@ export default function App() {
 
         const details = r.selections.map((s) => {
           const w = WEEKS.find((x) => x.id === s.weekId)!;
+
           const base = s.enrolled
             ? r.role === "animatore"
               ? w.animatorBase
               : priceForChild(pos, w)
             : 0;
+
           const lunch = s.enrolled && s.lunch
             ? r.role === "animatore"
               ? w.animatorLunch
               : w.childLunch
             : 0;
+
           const pool = s.enrolled && s.pool
             ? r.role === "animatore"
               ? w.animatorPool
               : w.childPool
             : 0;
+
           const trip = s.enrolled && s.trip
             ? r.role === "animatore"
               ? w.animatorTrip
@@ -250,14 +254,18 @@ export default function App() {
     setRows((current) =>
       current.map((row) => {
         if (row.id !== id) return row;
+
         return {
           ...row,
           selections: row.selections.map((s) => {
             if (s.weekId !== weekId) return s;
+
             const next = { ...s, [key]: value };
+
             if (!next.enrolled) {
               return { ...next, lunch: false, pool: false, trip: false };
             }
+
             return next;
           }),
         };
@@ -321,27 +329,27 @@ export default function App() {
     return lines.join("\n");
   }
 
-async function sendQuoteEmail() {
-  const res = await fetch("/api/send-quote", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      to: email,
-      subject: "Preventivo Oratorio Estivo",
-      text: buildEmailSummary(),
-    }),
-  });
+  async function sendQuoteEmail() {
+    const res = await fetch("/api/send-quote", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to: email,
+        subject: "Preventivo Oratorio Estivo",
+        text: buildEmailSummary(),
+      }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.ok) {
-    alert("Preventivo inviato correttamente!");
-  } else {
-    alert("Errore durante l'invio.");
+    if (data.ok) {
+      alert("Preventivo inviato correttamente!");
+    } else {
+      alert("Errore durante l'invio.");
+    }
   }
-}
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
@@ -437,7 +445,103 @@ async function sendQuoteEmail() {
                       </Button>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    {/* MOBILE VIEW */}
+                    <div className="space-y-3 md:hidden">
+                      {r.details.map((d) => (
+                        <div
+                          key={d.weekId}
+                          className={`rounded-xl border p-3 ${d.enrolled ? "bg-slate-50" : "bg-white"}`}
+                        >
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <div>
+                              <div className="font-medium">{d.w.label}</div>
+                              <div className="text-xs text-slate-500">{d.w.period}</div>
+                            </div>
+                            <div className="font-semibold">{formatEuro(d.total)}</div>
+                          </div>
+
+                          <label className="flex items-center justify-between border-t py-2">
+                            <span className="text-sm">Iscrizione</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">
+                                {formatEuro(
+                                  r.role === "animatore" ? d.w.animatorBase : priceForChild(r.pos, d.w)
+                                )}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={d.enrolled}
+                                onChange={(e) => toggle(r.id, d.weekId, "enrolled", e.target.checked)}
+                                className="h-5 w-5 accent-blue-600"
+                              />
+                            </div>
+                          </label>
+
+                          <label
+                            className={`flex items-center justify-between border-t py-2 ${
+                              !d.enrolled ? "opacity-40" : ""
+                            }`}
+                          >
+                            <span className="text-sm">Mensa</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">
+                                {formatEuro(r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch)}
+                              </span>
+                              <input
+                                type="checkbox"
+                                disabled={!d.enrolled}
+                                checked={d.lunch}
+                                onChange={(e) => toggle(r.id, d.weekId, "lunch", e.target.checked)}
+                                className="h-5 w-5 accent-blue-600"
+                              />
+                            </div>
+                          </label>
+
+                          <label
+                            className={`flex items-center justify-between border-t py-2 ${
+                              !d.enrolled ? "opacity-40" : ""
+                            }`}
+                          >
+                            <span className="text-sm">Piscina</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">
+                                {formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}
+                              </span>
+                              <input
+                                type="checkbox"
+                                disabled={!d.enrolled}
+                                checked={d.pool}
+                                onChange={(e) => toggle(r.id, d.weekId, "pool", e.target.checked)}
+                                className="h-5 w-5 accent-blue-600"
+                              />
+                            </div>
+                          </label>
+
+                          <label
+                            className={`flex items-center justify-between border-t py-2 ${
+                              !d.enrolled ? "opacity-40" : ""
+                            }`}
+                          >
+                            <span className="text-sm">{d.w.tripName}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">
+                                {formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}
+                              </span>
+                              <input
+                                type="checkbox"
+                                disabled={!d.enrolled}
+                                checked={d.trip}
+                                onChange={(e) => toggle(r.id, d.weekId, "trip", e.target.checked)}
+                                className="h-5 w-5 accent-blue-600"
+                              />
+                            </div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* DESKTOP VIEW */}
+                    <div className="hidden overflow-x-auto md:block">
                       <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl border text-sm">
                         <thead>
                           <tr className="bg-slate-100 text-left text-slate-700">
@@ -464,7 +568,7 @@ async function sendQuoteEmail() {
                                     type="checkbox"
                                     checked={d.enrolled}
                                     onChange={(e) => toggle(r.id, d.weekId, "enrolled", e.target.checked)}
-                                    className="mt-1"
+                                    className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
                                     <span className="block font-medium">
@@ -488,7 +592,7 @@ async function sendQuoteEmail() {
                                     disabled={!d.enrolled}
                                     checked={d.lunch}
                                     onChange={(e) => toggle(r.id, d.weekId, "lunch", e.target.checked)}
-                                    className="mt-1"
+                                    className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
                                     <span className="block font-medium">
@@ -510,7 +614,7 @@ async function sendQuoteEmail() {
                                     disabled={!d.enrolled}
                                     checked={d.pool}
                                     onChange={(e) => toggle(r.id, d.weekId, "pool", e.target.checked)}
-                                    className="mt-1"
+                                    className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
                                     <span className="block font-medium">
@@ -532,7 +636,7 @@ async function sendQuoteEmail() {
                                     disabled={!d.enrolled}
                                     checked={d.trip}
                                     onChange={(e) => toggle(r.id, d.weekId, "trip", e.target.checked)}
-                                    className="mt-1"
+                                    className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
                                     <span className="block font-medium">
@@ -615,7 +719,7 @@ async function sendQuoteEmail() {
                   Invio email
                 </CardTitle>
                 <CardDescription>
-                  In questa fase l&apos;invio apre il client email del dispositivo con il preventivo già compilato.
+                  Il preventivo viene inviato automaticamente all&apos;indirizzo inserito.
                 </CardDescription>
               </CardHeader>
 
@@ -624,10 +728,6 @@ async function sendQuoteEmail() {
                   <Send className="mr-2 h-4 w-4" />
                   Invia preventivo via email
                 </Button>
-                <p className="text-xs text-slate-500">
-                  Questo step usa un link mailto. Nel passaggio successivo potremo collegare un invio
-                  email automatico reale.
-                </p>
               </CardContent>
             </Card>
           </div>
