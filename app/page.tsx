@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Calculator, Users, Euro, Plus, Minus, Send } from "lucide-react";
+import { Mail, Calculator, Users, Euro, Plus, Minus, Send, Shirt } from "lucide-react";
+
+const GENERAL_REGISTRATION_FEE = 30;
+const EXTRA_SHIRT_FEE = 10;
 
 const WEEKS = [
   {
@@ -151,6 +154,7 @@ type Row = {
   id: number;
   role: "figlio" | "animatore";
   name: string;
+  extraShirt: boolean;
   selections: Selection[];
 };
 
@@ -186,7 +190,7 @@ function roleBadge(role: Row["role"]) {
 export default function App() {
   const [email, setEmail] = useState("");
   const [rows, setRows] = useState<Row[]>([
-    { id: 1, role: "figlio", name: "", selections: createSelections() },
+    { id: 1, role: "figlio", name: "", extraShirt: false, selections: createSelections() },
   ]);
 
   const childIndex = useMemo(() => {
@@ -237,12 +241,19 @@ export default function App() {
           };
         });
 
+        const weeklyTotal = details.reduce((a, b) => a + b.total, 0);
+        const registrationFee = GENERAL_REGISTRATION_FEE;
+        const extraShirtFee = r.extraShirt ? EXTRA_SHIRT_FEE : 0;
+
         return {
           ...r,
           pos,
           details,
+          registrationFee,
+          extraShirtFee,
+          weeklyTotal,
           displayName: r.name || (r.role === "figlio" ? `Figlio ${pos}` : "Animatore"),
-          total: details.reduce((a, b) => a + b.total, 0),
+          total: registrationFee + extraShirtFee + weeklyTotal,
         };
       }),
     [rows, childIndex]
@@ -260,11 +271,9 @@ export default function App() {
           selections: row.selections.map((s) => {
             if (s.weekId !== weekId) return s;
             const next = { ...s, [key]: value };
-
             if (!next.enrolled) {
               return { ...next, lunch: false, pool: false, trip: false };
             }
-
             return next;
           }),
         };
@@ -276,13 +285,19 @@ export default function App() {
     const id = Math.max(0, ...rows.map((r) => r.id)) + 1;
     setRows((current) => [
       ...current,
-      { id, role, name: "", selections: createSelections() },
+      { id, role, name: "", extraShirt: false, selections: createSelections() },
     ]);
   }
 
   function updateName(id: number, name: string) {
     setRows((current) =>
       current.map((row) => (row.id === id ? { ...row, name } : row))
+    );
+  }
+
+  function updateExtraShirt(id: number, value: boolean) {
+    setRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, extraShirt: value } : row))
     );
   }
 
@@ -303,6 +318,10 @@ export default function App() {
           participant.role === "figlio" ? ` (figlio n. ${participant.pos})` : " (animatore)"
         }`
       );
+      lines.push(`- Quota generale iscrizione: ${formatEuro(participant.registrationFee)}`);
+      if (participant.extraShirtFee > 0) {
+        lines.push(`- Maglietta aggiuntiva: ${formatEuro(participant.extraShirtFee)}`);
+      }
 
       participant.details
         .filter((d) => d.enrolled)
@@ -351,25 +370,25 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-orange-50 p-4 text-slate-900 md:p-8" style={{ fontFamily: '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif' }}>
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Preventivo Oratorio Estivo</h1>
-          <p className="text-sm text-slate-600 md:text-base">
-            Seleziona per ogni partecipante le settimane frequentate e gli eventuali servizi collegati.
+          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Preventivo Oratorio Estivo</h1>
+          <p className="max-w-3xl text-sm text-slate-600 md:text-base">
+            Seleziona per ogni partecipante le settimane frequentate, i servizi collegati e le eventuali magliette aggiuntive.
             Mensa, piscina e gita si attivano solo se la settimana è stata selezionata.
           </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.55fr_0.85fr]">
-          <Card className="rounded-2xl shadow-sm">
+          <Card className="rounded-3xl border-white/60 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Users className="h-5 w-5" />
                 Composizione famiglia
               </CardTitle>
               <CardDescription>
-                L&apos;ordine di inserimento dei figli determina automaticamente l&apos;applicazione dello sconto.
+                L&apos;ordine di inserimento dei figli determina automaticamente l&apos;applicazione dello sconto settimanale.
               </CardDescription>
             </CardHeader>
 
@@ -382,17 +401,18 @@ export default function App() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="genitore@email.it"
+                  className="rounded-2xl"
                 />
               </div>
 
               <Separator />
 
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => add("figlio")} className="rounded-xl">
+                <Button onClick={() => add("figlio")} className="rounded-2xl">
                   <Plus className="mr-2 h-4 w-4" />
                   Aggiungi figlio
                 </Button>
-                <Button variant="outline" onClick={() => add("animatore")} className="rounded-xl">
+                <Button variant="outline" onClick={() => add("animatore")} className="rounded-2xl">
                   <Plus className="mr-2 h-4 w-4" />
                   Aggiungi animatore
                 </Button>
@@ -400,16 +420,12 @@ export default function App() {
 
               <div className="space-y-5">
                 {computed.map((r) => (
-                  <div key={r.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+                  <div key={r.id} className="rounded-3xl border bg-white p-4 shadow-sm">
                     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-slate-900">{r.displayName}</h3>
-                          <span
-                            className={`rounded-full border px-2.5 py-1 text-xs font-medium ${roleBadge(
-                              r.role
-                            )}`}
-                          >
+                          <h3 className="text-lg font-bold text-slate-900">{r.displayName}</h3>
+                          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${roleBadge(r.role)}`}>
                             {r.role === "figlio" ? `Figlio ${r.pos}` : "Animatore"}
                           </span>
                         </div>
@@ -420,22 +436,50 @@ export default function App() {
                             : "Quota settimanale sempre pari a 0 €, con servizi dedicati."}
                         </p>
 
-                        <div className="max-w-sm space-y-2">
-                          <Label htmlFor={`name-${r.id}`}>
-                            {r.role === "figlio" ? "Nome del figlio" : "Nome animatore"}
-                          </Label>
-                          <Input
-                            id={`name-${r.id}`}
-                            value={r.name}
-                            onChange={(e) => updateName(r.id, e.target.value)}
-                            placeholder={r.role === "figlio" ? "Es. Luca" : "Es. Marco"}
-                          />
+                        <div className="grid max-w-2xl gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor={`name-${r.id}`}>
+                              {r.role === "figlio" ? "Nome del figlio" : "Nome animatore"}
+                            </Label>
+                            <Input
+                              id={`name-${r.id}`}
+                              value={r.name}
+                              onChange={(e) => updateName(r.id, e.target.value)}
+                              placeholder={r.role === "figlio" ? "Es. Luca" : "Es. Marco"}
+                              className="rounded-2xl"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Opzioni generali</Label>
+                            <div className="rounded-2xl border bg-slate-50 p-3 text-sm">
+                              <div className="flex items-center justify-between">
+                                <span>Quota iscrizione generale</span>
+                                <span className="font-semibold">{formatEuro(GENERAL_REGISTRATION_FEE)}</span>
+                              </div>
+                              <label className="mt-3 flex items-center justify-between gap-3">
+                                <span className="flex items-center gap-2">
+                                  <Shirt className="h-4 w-4" />
+                                  Maglietta aggiuntiva
+                                </span>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-semibold">{formatEuro(EXTRA_SHIRT_FEE)}</span>
+                                  <input
+                                    type="checkbox"
+                                    checked={r.extraShirt}
+                                    onChange={(e) => updateExtraShirt(r.id, e.target.checked)}
+                                    className="h-5 w-5 accent-blue-600"
+                                  />
+                                </div>
+                              </label>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <Button
                         variant="ghost"
-                        className="rounded-xl text-slate-500"
+                        className="rounded-2xl text-slate-500"
                         onClick={() => removeRow(r.id)}
                         disabled={rows.length === 1}
                       >
@@ -444,16 +488,31 @@ export default function App() {
                       </Button>
                     </div>
 
+                    <div className="mb-4 grid gap-3 md:grid-cols-3">
+                      <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                        <div className="text-slate-500">Quota iscrizione generale</div>
+                        <div className="text-lg font-bold">{formatEuro(r.registrationFee)}</div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                        <div className="text-slate-500">Maglietta aggiuntiva</div>
+                        <div className="text-lg font-bold">{formatEuro(r.extraShirtFee)}</div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                        <div className="text-slate-500">Totale settimane e servizi</div>
+                        <div className="text-lg font-bold">{formatEuro(r.weeklyTotal)}</div>
+                      </div>
+                    </div>
+
                     {/* MOBILE */}
                     <div className="space-y-3 md:hidden">
                       {r.details.map((d) => (
                         <div
                           key={d.weekId}
-                          className={`rounded-xl border p-3 ${d.enrolled ? "bg-slate-50" : "bg-white"}`}
+                          className={`rounded-2xl border p-3 ${d.enrolled ? "bg-slate-50" : "bg-white"}`}
                         >
                           <div className="mb-2 flex items-center justify-between">
                             <div>
-                              <div className="font-medium">{d.w.label}</div>
+                              <div className="font-semibold">{d.w.label}</div>
                               <div className="text-xs text-slate-500">{d.w.period}</div>
                             </div>
                             <div className="font-semibold">{formatEuro(d.total)}</div>
@@ -462,7 +521,7 @@ export default function App() {
                           <label className="flex items-center justify-between border-t py-2">
                             <span className="text-sm">Iscrizione</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
+                              <span className="text-sm font-semibold">
                                 {formatEuro(
                                   r.role === "animatore" ? d.w.animatorBase : priceForChild(r.pos, d.w)
                                 )}
@@ -476,16 +535,10 @@ export default function App() {
                             </div>
                           </label>
 
-                          <label
-                            className={`flex items-center justify-between border-t py-2 ${
-                              !d.enrolled ? "opacity-40" : ""
-                            }`}
-                          >
+                          <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">Mensa</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">
-                                {formatEuro(r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch)}
-                              </span>
+                              <span className="text-sm">{formatEuro(r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch)}</span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -496,16 +549,10 @@ export default function App() {
                             </div>
                           </label>
 
-                          <label
-                            className={`flex items-center justify-between border-t py-2 ${
-                              !d.enrolled ? "opacity-40" : ""
-                            }`}
-                          >
+                          <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">Piscina</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">
-                                {formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}
-                              </span>
+                              <span className="text-sm">{formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}</span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -516,16 +563,10 @@ export default function App() {
                             </div>
                           </label>
 
-                          <label
-                            className={`flex items-center justify-between border-t py-2 ${
-                              !d.enrolled ? "opacity-40" : ""
-                            }`}
-                          >
+                          <label className={`flex items-center justify-between border-t py-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                             <span className="text-sm">{d.w.tripName}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm">
-                                {formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}
-                              </span>
+                              <span className="text-sm">{formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}</span>
                               <input
                                 type="checkbox"
                                 disabled={!d.enrolled}
@@ -552,7 +593,6 @@ export default function App() {
                             <th className="px-3 py-3 text-right font-semibold">Totale</th>
                           </tr>
                         </thead>
-
                         <tbody>
                           {r.details.map((d) => (
                             <tr key={d.weekId} className={d.enrolled ? "bg-slate-50/80" : "bg-white"}>
@@ -560,7 +600,6 @@ export default function App() {
                                 <div className="font-medium">{d.w.label}</div>
                                 <div className="text-xs text-slate-500">{d.w.period}</div>
                               </td>
-
                               <td className="border-t px-3 py-3 align-top">
                                 <label className="flex items-start gap-2">
                                   <input
@@ -572,20 +611,15 @@ export default function App() {
                                   <span>
                                     <span className="block font-medium">
                                       {formatEuro(
-                                        r.role === "animatore"
-                                          ? d.w.animatorBase
-                                          : priceForChild(r.pos, d.w)
+                                        r.role === "animatore" ? d.w.animatorBase : priceForChild(r.pos, d.w)
                                       )}
                                     </span>
                                     <span className="block text-xs text-slate-500">quota settimana</span>
                                   </span>
                                 </label>
                               </td>
-
                               <td className="border-t px-3 py-3 align-top">
-                                <label
-                                  className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}
-                                >
+                                <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
                                     disabled={!d.enrolled}
@@ -594,20 +628,13 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">
-                                      {formatEuro(
-                                        r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch
-                                      )}
-                                    </span>
+                                    <span className="block font-medium">{formatEuro(r.role === "animatore" ? d.w.animatorLunch : d.w.childLunch)}</span>
                                     <span className="block text-xs text-slate-500">servizio mensa</span>
                                   </span>
                                 </label>
                               </td>
-
                               <td className="border-t px-3 py-3 align-top">
-                                <label
-                                  className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}
-                                >
+                                <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
                                     disabled={!d.enrolled}
@@ -616,20 +643,13 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">
-                                      {formatEuro(
-                                        r.role === "animatore" ? d.w.animatorPool : d.w.childPool
-                                      )}
-                                    </span>
+                                    <span className="block font-medium">{formatEuro(r.role === "animatore" ? d.w.animatorPool : d.w.childPool)}</span>
                                     <span className="block text-xs text-slate-500">ingresso piscina</span>
                                   </span>
                                 </label>
                               </td>
-
                               <td className="border-t px-3 py-3 align-top">
-                                <label
-                                  className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}
-                                >
+                                <label className={`flex items-start gap-2 ${!d.enrolled ? "opacity-40" : ""}`}>
                                   <input
                                     type="checkbox"
                                     disabled={!d.enrolled}
@@ -638,19 +658,12 @@ export default function App() {
                                     className="mt-1 h-5 w-5 accent-blue-600"
                                   />
                                   <span>
-                                    <span className="block font-medium">
-                                      {formatEuro(
-                                        r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip
-                                      )}
-                                    </span>
+                                    <span className="block font-medium">{formatEuro(r.role === "animatore" ? d.w.animatorTrip : d.w.childTrip)}</span>
                                     <span className="block text-xs text-slate-500">{d.w.tripName}</span>
                                   </span>
                                 </label>
                               </td>
-
-                              <td className="border-t px-3 py-3 text-right align-top font-semibold">
-                                {formatEuro(d.total)}
-                              </td>
+                              <td className="border-t px-3 py-3 text-right align-top font-semibold">{formatEuro(d.total)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -658,7 +671,7 @@ export default function App() {
                     </div>
 
                     <div className="mt-4 flex justify-end">
-                      <div className="rounded-xl bg-slate-50 px-4 py-3 text-right">
+                      <div className="rounded-2xl bg-slate-50 px-4 py-3 text-right">
                         <div className="text-sm text-slate-500">Totale {r.displayName}</div>
                         <div className="text-lg font-bold">{formatEuro(r.total)}</div>
                       </div>
@@ -670,7 +683,7 @@ export default function App() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="rounded-2xl shadow-sm lg:sticky lg:top-6">
+            <Card className="rounded-3xl shadow-sm lg:sticky lg:top-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Calculator className="h-5 w-5" />
@@ -691,6 +704,9 @@ export default function App() {
                       <div>
                         <div className="font-medium">{r.displayName}</div>
                         <div className="text-slate-500">
+                          quota base {formatEuro(r.registrationFee)}
+                          {r.extraShirtFee > 0 ? `, maglietta ${formatEuro(r.extraShirtFee)}` : ""}
+                          <br />
                           {enrolledWeeks} sett., {lunchCount} mensa, {tripCount} gite, {poolCount} piscina
                         </div>
                       </div>
@@ -701,7 +717,7 @@ export default function App() {
 
                 <Separator />
 
-                <div className="flex items-center justify-between rounded-xl bg-slate-900 p-4 text-white">
+                <div className="flex items-center justify-between rounded-2xl bg-slate-900 p-4 text-white">
                   <div>
                     <div className="text-sm text-slate-300">Totale complessivo</div>
                     <div className="text-2xl font-bold">{formatEuro(total)}</div>
@@ -711,7 +727,7 @@ export default function App() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl shadow-sm">
+            <Card className="rounded-3xl shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Mail className="h-5 w-5" />
@@ -723,7 +739,7 @@ export default function App() {
               </CardHeader>
 
               <CardContent className="space-y-3">
-                <Button className="w-full rounded-xl" disabled={!email} onClick={sendQuoteEmail}>
+                <Button className="w-full rounded-2xl" disabled={!email} onClick={sendQuoteEmail}>
                   <Send className="mr-2 h-4 w-4" />
                   Invia preventivo via email
                 </Button>
