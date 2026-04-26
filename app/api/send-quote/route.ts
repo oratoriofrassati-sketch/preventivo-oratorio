@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         sender: {
           name: "Oratorio Frassati",
-          email: "TUO_INDIRIZZO_VERIFICATO",
+          email: "oratoriofrassati@sacrafamigliamonza.it",
         },
         to: [{ email: to }],
         subject,
@@ -19,16 +19,16 @@ export async function POST(req: Request) {
       }),
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const error = await res.text();
-      console.error("Brevo error:", error);
-      return Response.json({ ok: false, error }, { status: res.status });
+      console.error("BREVO ERROR:", data);
+      return Response.json({ ok: false, error: data }, { status: res.status });
     }
 
-    const data = await res.json();
     return Response.json({ ok: true, data });
   } catch (error) {
-    console.error("Send quote error:", error);
+    console.error("SEND ERROR:", error);
     return Response.json({ ok: false, error: String(error) }, { status: 500 });
   }
 }
