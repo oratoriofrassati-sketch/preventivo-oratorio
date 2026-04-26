@@ -1,6 +1,6 @@
 export async function POST(req: Request) {
   try {
-    const { to, subject, text } = await req.json();
+    const { to, subject, text, html } = await req.json();
 
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
         to: [{ email: to }],
         subject,
         textContent: text,
+        htmlContent: html,
       }),
     });
 

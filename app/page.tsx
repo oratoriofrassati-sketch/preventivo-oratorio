@@ -309,6 +309,7 @@ export default function App() {
           ...row,
           selections: row.selections.map((s) => {
             if (s.weekId !== weekId) return s;
+
             const next = { ...s, [key]: value };
 
             if (!next.enrolled) {
@@ -422,6 +423,128 @@ export default function App() {
     return lines.join("\n");
   }
 
+  function buildEmailHtml() {
+    const participantsHtml = computed
+      .map((participant) => {
+        const weeksHtml = participant.details
+          .filter((d) => d.enrolled)
+          .map((d) => {
+            const extras: string[] = [];
+
+            if (d.selectedLunchDays.length > 0) {
+              extras.push(
+                `Mensa: ${d.selectedLunchDays.join(", ")} — ${formatEuro(d.lunchAmount)}`
+              );
+            }
+
+            if (d.pool) {
+              extras.push(`Piscina — ${formatEuro(d.poolAmount)}`);
+            }
+
+            if (d.trip) {
+              extras.push(`${d.w.tripName} — ${formatEuro(d.tripAmount)}`);
+            }
+
+            return `
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top;">
+                  <strong>${d.w.label}</strong><br>
+                  <span style="color:#64748b;font-size:13px;">${d.w.period}</span>
+                </td>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top;">
+                  ${formatEuro(d.base)}
+                </td>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:top;">
+                  ${extras.length ? extras.join("<br>") : "-"}
+                </td>
+                <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">
+                  <strong>${formatEuro(d.total)}</strong>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        return `
+          <div style="margin-bottom:28px;padding:18px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff;">
+            <h2 style="margin:0 0 8px;font-size:20px;color:#0f172a;">
+              ${participant.displayName}
+            </h2>
+
+            <p style="margin:0 0 14px;color:#64748b;font-size:14px;">
+              ${participant.role === "figlio" ? `Figlio n. ${participant.pos}` : "Animatore"}
+            </p>
+
+            <div style="margin-bottom:14px;padding:12px;background:#f8fafc;border-radius:12px;">
+              <div>Quota generale iscrizione: <strong>${formatEuro(participant.registrationFee)}</strong></div>
+              ${
+                participant.extraShirtFee > 0
+                  ? `<div>Maglietta aggiuntiva: <strong>${formatEuro(participant.extraShirtFee)}</strong></div>`
+                  : ""
+              }
+            </div>
+
+            ${
+              weeksHtml
+                ? `
+                  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                    <thead>
+                      <tr style="background:#f1f5f9;">
+                        <th style="padding:10px;text-align:left;">Settimana</th>
+                        <th style="padding:10px;text-align:left;">Quota</th>
+                        <th style="padding:10px;text-align:left;">Servizi</th>
+                        <th style="padding:10px;text-align:right;">Totale</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${weeksHtml}
+                    </tbody>
+                  </table>
+                `
+                : `<p style="color:#64748b;">Nessuna settimana selezionata.</p>`
+            }
+
+            <div style="margin-top:14px;text-align:right;font-size:17px;">
+              Totale ${participant.displayName}: 
+              <strong>${formatEuro(participant.total)}</strong>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+          <div style="max-width:760px;margin:0 auto;padding:24px;">
+            <div style="text-align:center;margin-bottom:28px;">
+              <h1 style="margin:0;font-size:28px;color:#0f172a;">
+                Preventivo Oratorio Estivo
+              </h1>
+              <p style="margin:8px 0 0;color:#64748b;font-size:15px;">
+                Riepilogo del preventivo generato online
+              </p>
+            </div>
+
+            ${participantsHtml}
+
+            <div style="margin-top:28px;padding:22px;border-radius:18px;background:#0f172a;color:#ffffff;text-align:center;">
+              <div style="font-size:15px;color:#cbd5e1;">Totale complessivo</div>
+              <div style="font-size:34px;font-weight:700;margin-top:4px;">
+                ${formatEuro(total)}
+              </div>
+            </div>
+
+            <p style="margin-top:28px;color:#64748b;font-size:13px;text-align:center;">
+              Questo preventivo è indicativo e dovrà essere confermato dalla segreteria dell’oratorio.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
   async function sendQuoteEmail() {
     const res = await fetch("/api/send-quote", {
       method: "POST",
@@ -432,6 +555,7 @@ export default function App() {
         to: email,
         subject: "Preventivo Oratorio Estivo",
         text: buildEmailSummary(),
+        html: buildEmailHtml(),
       }),
     });
 
