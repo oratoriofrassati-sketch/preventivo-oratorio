@@ -10,6 +10,7 @@ import { Mail, Calculator, Users, Euro, Plus, Minus, Send, Shirt } from "lucide-
 
 const GENERAL_REGISTRATION_FEE = 30;
 const EXTRA_SHIRT_FEE = 10;
+const ANIMATOR_GARDALAND_TRIP_FEE = 29;
 const CHILD_LUNCH_DAY_FEE = 6;
 const ANIMATOR_LUNCH_DAY_FEE = 4;
 
@@ -178,6 +179,7 @@ type Row = {
   role: "figlio" | "animatore";
   name: string;
   extraShirt: boolean;
+  animatorGardalandTrip: boolean;
   selections: Selection[];
 };
 
@@ -207,7 +209,14 @@ function roleBadge(role: Row["role"]) {
 export default function App() {
   const [email, setEmail] = useState("");
   const [rows, setRows] = useState<Row[]>([
-    { id: 1, role: "figlio", name: "", extraShirt: false, selections: createSelections() },
+    {
+      id: 1,
+      role: "figlio",
+      name: "",
+      extraShirt: false,
+      animatorGardalandTrip: false,
+      selections: createSelections(),
+    },
   ]);
 
   const computed = useMemo(() => {
@@ -279,6 +288,10 @@ export default function App() {
       const weeklyTotal = details.reduce((a, b) => a + b.total, 0);
       const registrationFee = GENERAL_REGISTRATION_FEE;
       const extraShirtFee = r.extraShirt ? EXTRA_SHIRT_FEE : 0;
+      const animatorGardalandTripFee =
+        r.role === "animatore" && r.animatorGardalandTrip
+          ? ANIMATOR_GARDALAND_TRIP_FEE
+          : 0;
 
       const globalChildPosition =
         r.role === "figlio"
@@ -291,9 +304,10 @@ export default function App() {
         details,
         registrationFee,
         extraShirtFee,
+        animatorGardalandTripFee,
         weeklyTotal,
         displayName: r.name || (r.role === "figlio" ? `Figlio ${globalChildPosition}` : "Animatore"),
-        total: registrationFee + extraShirtFee + weeklyTotal,
+        total: registrationFee + extraShirtFee + animatorGardalandTripFee + weeklyTotal,
       };
     });
   }, [rows]);
@@ -352,7 +366,14 @@ export default function App() {
     const id = Math.max(0, ...rows.map((r) => r.id)) + 1;
     setRows((current) => [
       ...current,
-      { id, role, name: "", extraShirt: false, selections: createSelections() },
+      {
+        id,
+        role,
+        name: "",
+        extraShirt: false,
+        animatorGardalandTrip: false,
+        selections: createSelections(),
+      },
     ]);
   }
 
@@ -365,6 +386,14 @@ export default function App() {
   function updateExtraShirt(id: number, value: boolean) {
     setRows((current) =>
       current.map((row) => (row.id === id ? { ...row, extraShirt: value } : row))
+    );
+  }
+
+  function updateAnimatorGardalandTrip(id: number, value: boolean) {
+    setRows((current) =>
+      current.map((row) =>
+        row.id === id ? { ...row, animatorGardalandTrip: value } : row
+      )
     );
   }
 
@@ -389,6 +418,12 @@ export default function App() {
 
       if (participant.extraShirtFee > 0) {
         lines.push(`- Maglietta aggiuntiva: ${formatEuro(participant.extraShirtFee)}`);
+      }
+
+      if (participant.animatorGardalandTripFee > 0) {
+        lines.push(
+          `- Gita animatori a Gardaland: ${formatEuro(participant.animatorGardalandTripFee)}`
+        );
       }
 
       participant.details
@@ -480,6 +515,11 @@ export default function App() {
               ${
                 participant.extraShirtFee > 0
                   ? `<div>Maglietta aggiuntiva: <strong>${formatEuro(participant.extraShirtFee)}</strong></div>`
+                  : ""
+              }
+              ${
+                participant.animatorGardalandTripFee > 0
+                  ? `<div>Gita animatori a Gardaland: <strong>${formatEuro(participant.animatorGardalandTripFee)}</strong></div>`
                   : ""
               }
             </div>
@@ -675,6 +715,7 @@ export default function App() {
                                 <span>Quota iscrizione generale</span>
                                 <span className="font-semibold">{formatEuro(GENERAL_REGISTRATION_FEE)}</span>
                               </div>
+
                               <label className="mt-3 flex items-center justify-between gap-3">
                                 <span className="flex items-center gap-2">
                                   <Shirt className="h-4 w-4" />
@@ -690,6 +731,28 @@ export default function App() {
                                   />
                                 </div>
                               </label>
+
+                              {r.role === "animatore" && (
+                                <label className="mt-3 flex items-center justify-between gap-3 rounded-xl border bg-white p-3">
+                                  <span>
+                                    <span className="block font-medium">Gita animatori a Gardaland</span>
+                                    <span className="block text-xs text-slate-500">
+                                      Opzione riservata agli animatori
+                                    </span>
+                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-semibold">
+                                      {formatEuro(ANIMATOR_GARDALAND_TRIP_FEE)}
+                                    </span>
+                                    <input
+                                      type="checkbox"
+                                      checked={r.animatorGardalandTrip}
+                                      onChange={(e) => updateAnimatorGardalandTrip(r.id, e.target.checked)}
+                                      className="h-5 w-5 accent-blue-600"
+                                    />
+                                  </div>
+                                </label>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -706,7 +769,7 @@ export default function App() {
                       </Button>
                     </div>
 
-                    <div className="mb-4 grid gap-3 md:grid-cols-3">
+                    <div className={`mb-4 grid gap-3 ${r.role === "animatore" ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
                       <div className="rounded-2xl bg-slate-50 p-3 text-sm">
                         <div className="text-slate-500">Quota iscrizione generale</div>
                         <div className="text-lg font-bold">{formatEuro(r.registrationFee)}</div>
@@ -715,6 +778,12 @@ export default function App() {
                         <div className="text-slate-500">Maglietta aggiuntiva</div>
                         <div className="text-lg font-bold">{formatEuro(r.extraShirtFee)}</div>
                       </div>
+                      {r.role === "animatore" && (
+                        <div className="rounded-2xl bg-slate-50 p-3 text-sm">
+                          <div className="text-slate-500">Gita animatori a Gardaland</div>
+                          <div className="text-lg font-bold">{formatEuro(r.animatorGardalandTripFee)}</div>
+                        </div>
+                      )}
                       <div className="rounded-2xl bg-slate-50 p-3 text-sm">
                         <div className="text-slate-500">Totale settimane e servizi</div>
                         <div className="text-lg font-bold">{formatEuro(r.weeklyTotal)}</div>
@@ -957,6 +1026,9 @@ export default function App() {
                         <div className="text-slate-500">
                           quota base {formatEuro(r.registrationFee)}
                           {r.extraShirtFee > 0 ? `, maglietta ${formatEuro(r.extraShirtFee)}` : ""}
+                          {r.animatorGardalandTripFee > 0
+                            ? `, Gardaland ${formatEuro(r.animatorGardalandTripFee)}`
+                            : ""}
                           <br />
                           {enrolledWeeks} sett., {lunchDaysCount} giorni mensa, {tripCount} gite, {poolCount} piscina
                         </div>
