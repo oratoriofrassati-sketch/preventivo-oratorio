@@ -422,7 +422,7 @@ export default function App() {
 
       if (participant.animatorGardalandTripFee > 0) {
         lines.push(
-          `- Gita animatori a Gardaland: ${formatEuro(participant.animatorGardalandTripFee)}`
+          `- Gita animatori a Gardaland, sabato 27 giugno: ${formatEuro(participant.animatorGardalandTripFee)}`
         );
       }
 
@@ -519,7 +519,7 @@ export default function App() {
               }
               ${
                 participant.animatorGardalandTripFee > 0
-                  ? `<div>Gita animatori a Gardaland: <strong>${formatEuro(participant.animatorGardalandTripFee)}</strong></div>`
+                  ? `<div>Gita animatori a Gardaland, sabato 27 giugno: <strong>${formatEuro(participant.animatorGardalandTripFee)}</strong></div>`
                   : ""
               }
             </div>
@@ -737,7 +737,7 @@ export default function App() {
                                   <span>
                                     <span className="block font-medium">Gita animatori a Gardaland</span>
                                     <span className="block text-xs text-slate-500">
-                                      Opzione riservata agli animatori
+                                      Sabato 27 giugno · opzione riservata agli animatori
                                     </span>
                                   </span>
                                   <div className="flex items-center gap-3">
